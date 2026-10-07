@@ -1,0 +1,15 @@
+# Install torch and torch-geometric with the build matching your CUDA version.
+torch
+torch-geometric
+rdkit
+lightgbm
+scikit-learn
+numpy
+pandas
+scipy
+matplotlib
+seaborn
+umap-learn
+openpyxl
+hdbscan        # optional: DBCV score, only when the split is recomputed
+ipykernel
