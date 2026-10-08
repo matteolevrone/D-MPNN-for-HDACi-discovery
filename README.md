@@ -60,26 +60,28 @@ yields 1,199 groups and 755 test molecules instead of 1,242 and 660, and every
 downstream number changes. The first cell loads `split/` when present and only
 recomputes the split in its absence.
 
-The group column is named `Cluster_Butina` for historical compatibility, although it is
-now produced by HDBSCAN.
+The chemical-group id of each molecule is stored in the `Cluster` column.
 
 ## Repository layout
 
-The modules are numbered in the order in which `main.ipynb` uses them. Inside each file
-the functions appear in call order, with the entry point called by the notebook last.
+The modules are numbered in the order in which `main.ipynb` uses them; `main.ipynb`
+itself holds no function definitions — every function lives in `s0`-`s8` and is just
+called from the notebook. Inside each file the functions appear in call order, with the
+entry point called by the notebook last.
 
 | File | Role |
 |---|---|
-| `main.ipynb` | End-to-end pipeline: split, baseline, split comparison, D-MPNN, stacking, per-isoform analysis, inference. |
+| `main.ipynb` | End-to-end pipeline: split, baseline, split comparison, D-MPNN, stacking, per-isoform analysis, inference, selectivity screening. |
 | `figures.ipynb` | Regenerates the paper figures and the validation loss curves from the artefacts in `outputs/`. |
-| `s0_config.py` | Shared constants: isoforms, target columns, SMILES and group columns. |
-| `s1_split.py` | Morgan fingerprints, UMAP + HDBSCAN clustering, best-of-N KS split, distribution plots. |
-| `s2_metrics.py` | Pooled and per-isoform metrics, parity plots, ranking metrics and EF@10%. |
+| `s0_config.py` | Shared constants: isoforms, target columns, SMILES and group columns, Class I isoforms, underpowered-n threshold. |
+| `s1_split.py` | Morgan fingerprints, UMAP + HDBSCAN clustering, best-of-N KS split, distribution plots, split-vs-random UMAP visualization. |
+| `s2_metrics.py` | Pooled and per-isoform metrics, parity plots, ranking metrics and EF@10%, the LightGBM/D-MPNN/stacking comparison table. |
 | `s3_baseline.py` | LightGBM baseline (`run_lgbm_baseline`): test predictions and out-of-fold predictions. |
 | `s4_dmpnn.py` | Graph featurisation, 25 global descriptors, augmentation, and the D-MPNN model. |
 | `s5_training.py` | Grouped k-fold training with SWA and early stopping over several seeds (`train_dmpnn`), seed selection on CV, fold-ensemble prediction. |
 | `s6_stacking.py` | Per-isoform non-negative Ridge meta-learner on out-of-fold predictions. |
 | `s7_inference.py` | Inference bundle export and prediction on new SMILES (also a command-line tool). |
+| `s8_screening.py` | Class I selectivity score, BitterDB cleaning, zinc-binding-group detection and drug-likeness, top-compound tables. |
 
 ## Method summary
 
