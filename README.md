@@ -1,4 +1,4 @@
-# MITHRIL — multi-target QSAR pipeline for HDAC inhibitors
+# Multi-target QSAR pipeline for HDAC inhibitors
 
 Multi-task regression of inhibitory potency (pIC50) against the **nine human HDAC
 isoforms**, with a focus on Class I (HDAC1, 2, 3, 8). The pipeline predicts all nine
