@@ -105,7 +105,7 @@ entry point called by the notebook last.
   chirality, membership of 3- to 7-membered rings, total valence, radical electrons) and
   8 bond features (bond type, conjugation, in-ring, stereochemistry). The implementation
   reports `node_in_features=29` and `edge_in_features=10` because `one_hot_encoding`
-  appends a trailing "other" slot to each one-hot block — three on atoms (atom type,
+  appends a trailing "other" slot to each one-hot block, in particular three on atoms (atom type,
   hybridisation, chirality) and two on bonds (bond type, stereochemistry). Since every
   block sums to exactly one, those five columns are linearly dependent on the rest and
   add no representational capacity: their contribution is absorbable into the bias, and
@@ -185,9 +185,8 @@ the cap group, the linker and the substitution pattern. On out-of-fold predictio
 Performance inside the hydroxamate subset is indistinguishable from performance on the
 whole population. Restriction to a subset normally deflates R² by shrinking the target
 variance, but here the subset SD is 1.141 against 1.147, so the two values are directly
-comparable, and Spearman — which is insensitive to that effect — agrees. Had R² collapsed
-to near zero within the subset, that would have falsified the model; it does not. This is
-also the regime in which the model is actually used, since a medicinal-chemistry project
+comparable, and Spearman agrees. Had R² collapsed to near zero within the subset, that would have falsified the model; it does not. 
+This is also the regime in which the model is actually used, since a medicinal-chemistry project
 ranks analogues within a committed chemotype rather than across chemotypes.
 
 ## Applicability domain
@@ -206,9 +205,8 @@ computed in each bin (`outputs/applicability/calibration.csv` and `calibration.p
 | 0.65–0.80 | 4344 | 0.769 | 0.515 | 0.724 |
 | 0.80–1.00 | 1556 | 0.732 | 0.516 | 0.724 |
 
-Below 0.45 the RMSE exceeds one pIC50 unit — a tenfold error in IC50 — and below 0.35
-R² is indistinguishable from zero: the ranking is uninformative there. **The threshold is
-set at 0.45.**
+Below 0.45 the RMSE exceeds one pIC50 unit and below 0.35 R² is indistinguishable from zero: the ranking is uninformative there. 
+**The threshold is set at 0.45.**
 
 The two calibration sources are complementary and both are needed. The test set measures
 error on a genuinely held-out split, but its similarity never drops below 0.27 so it
@@ -228,7 +226,7 @@ down to 0.14 and are what fixes the threshold.
 | **in domain *and* predicted > 6** | **0** |
 
 94% of the library sits outside the domain, and no compound is both inside the domain and
-predicted active — the most potent in-domain prediction is 5.71. The unfiltered top-15 by
+predicted active, since the most potent in-domain prediction is 5.71. The unfiltered top-15 by
 selectivity score has a median NN-Tanimoto of 0.26, roughly a third of the training
 similarity the test set enjoys, so that ranking is not interpretable as a hit list.
 
