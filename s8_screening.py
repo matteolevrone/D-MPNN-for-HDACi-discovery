@@ -61,7 +61,9 @@ def summ(name, s):
 
 # Zinc-binding groups and drug-likeness
 
-# Known HDAC zinc-binding groups (ZBGs)
+# Known HDAC zinc-binding groups (ZBGs).
+# Insertion order is the priority order used by zbg_hit: specific patterns must precede the
+# generic catch-alls ('thiol', 'carboxylic acid'), which would otherwise absorb their matches.
 ZBG_SMARTS = {
     'hydroxamic acid (pan-HDAC)': '[CX3](=[OX1])[NX3][OX2H1]',
     'aminoanilide (Class I)': '[CX3](=[OX1])[NX3]c1ccccc1[NX3;H1,H2]',
@@ -69,10 +71,13 @@ ZBG_SMARTS = {
     '2-mercaptobenzamide': '[SX2H]c1ccccc1[CX3](=[OX1])[NX3]',
     'alpha-ketoamide': '[CX3](=[OX1])[CX3](=[OX1])[NX3]',
     'trifluoromethyl ketone': '[CX3](=[OX1])C(F)(F)F',
-    'difluoromethyl ketone': '[CX3](=[OX1])[CX4](F)F',
+    # the plain [CX4](F)F form also matches a CF3 group, so trifluoromethyl is excluded explicitly
+    'difluoromethyl ketone': '[CX3](=[OX1])[CX4;!$([CX4](F)(F)F)](F)F',
     'acylhydrazide': '[CX3](=[OX1])[NX3][NX3]',
-    'oxadiazol-5-one': 'c1noc(=O)[nH]1',
-    'hydroxypyridinethione (HOPTO)': '[OX2H]c1ccc[nX2]c1[SX2H]',
+    # both tautomers, and either aromaticity perception of the ring
+    'oxadiazol-5-one': '[$(O=c1[nH]cno1),$(O=C1N=CNO1),$(O=c1nc[nH]o1)]',
+    'hydroxypyridinethione (HOPTO)': '[$([OX2H]c1ccc[nX2]c1[SX2H]),$([OX2H]c1ccc[nH]c1=[SX1]),'
+                                     '$([OX1]=c1ccc[nH]c1[SX2H])]',
     'tropolone': 'Oc1cccccc1=O',
     'squaramide': '[#8]=c1c([#7])c([#7])c1=[#8]',
     '8-hydroxyquinoline': '[OX2H]c1cccc2cccnc12',
@@ -84,13 +89,19 @@ ZBG_SMARTS = {
 ZBG_PATT = {k: Chem.MolFromSmarts(v) for k, v in ZBG_SMARTS.items()}
 
 
-# First known ZBG found in the molecule
+# First known ZBG found in the molecule, by the priority order of ZBG_SMARTS.
+# A molecule bearing several ZBGs is reported under one only: use zbg_all_hits to count prevalence.
 def zbg_hit(mol):
     for name, patt in ZBG_PATT.items():
         match = mol.GetSubstructMatch(patt)
         if match:
             return name, list(match)
     return None, []
+
+
+# Every known ZBG present, ignoring priority (for per-chemotype prevalence statistics)
+def zbg_all_hits(mol):
+    return [name for name, patt in ZBG_PATT.items() if mol.HasSubstructMatch(patt)]
 
 
 # Drug-likeness descriptors and the number of Lipinski
