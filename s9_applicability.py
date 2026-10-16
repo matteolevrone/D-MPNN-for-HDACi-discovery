@@ -1,4 +1,4 @@
-# Applicability domain: similarity to the training set, error calibration and prediction clipping
+# Applicability domain
 
 import os
 import numpy as np
@@ -9,19 +9,16 @@ from s0_config import TARGET_COLS, SMILES_COL, GROUP_COL
 from s1_split import generate_fingerprints
 from s2_metrics import _style_axes, _spearman, C_BLUE, C_ORANGE, INK, INK_SOFT, GRID
 
-# Similarity bin edges for the error calibration; the last bin collects everything above 0.8
+# Similarity bin edges 
 SIM_BINS = (0.0, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.80, 1.01)
 
-# A compound is out of domain once the measured RMSE in its similarity bin exceeds this (pIC50 units)
+# RMSE threshold (pIC50 units)
 RMSE_TOLERANCE = 1.0
 
 
 # Nearest-neighbour similarity
 
 # Maximum Tanimoto similarity of each query to the reference set.
-# When both group arrays are given, reference compounds sharing the query's group are excluded: with
-# GroupKFold the same cluster never straddles a fold, so this reproduces the similarity each
-# out-of-fold prediction actually saw.
 def nn_similarity(query_smiles, reference_smiles, query_groups=None, reference_groups=None):
     q_fps, q_valid = generate_fingerprints([str(s) for s in query_smiles])
     r_fps, r_valid = generate_fingerprints([str(s) for s in reference_smiles])
@@ -40,8 +37,6 @@ def nn_similarity(query_smiles, reference_smiles, query_groups=None, reference_g
 
 
 # Error calibration
-
-# Measured error per similarity bin. One row per bin, over the non-missing entries of y_true.
 def calibrate(similarity, y_true, y_pred, bins=SIM_BINS):
     sim, true, pred = np.asarray(similarity), np.asarray(y_true), np.asarray(y_pred)
     idx = np.digitize(sim, np.asarray(bins)[1:-1], right=False)
@@ -67,9 +62,7 @@ def calibrate(similarity, y_true, y_pred, bins=SIM_BINS):
     return pd.DataFrame(rows)
 
 
-# Lowest similarity at which the measured RMSE is still within tolerance.
-# Returns the upper edge of the highest-similarity bin that breaches it, so every bin below the
-# threshold is one where the error was actually measured to be too large.
+# Lowest similarity at which the threshold is respected
 def choose_threshold(cal, tolerance=RMSE_TOLERANCE):
     bad = cal[(cal['n_obs'] >= 2) & (cal['rmse'] > tolerance)]
     return float(bad['sim_high'].max()) if len(bad) else 0.0
@@ -103,14 +96,11 @@ def plot_calibration(cal, threshold, output_path, title='Applicability domain ca
 
 # Prediction clipping
 
-# pIC50 range spanned by the observed labels; predictions outside it are extrapolation artefacts.
 def observed_bounds(y_true, margin=0.0):
     v = np.asarray(y_true, dtype=float).ravel()
     v = v[~np.isnan(v)]
     return float(v.min() - margin), float(v.max() + margin)
 
-
-# Clips predictions into bounds and reports which rows were touched
 def clip_predictions(preds, bounds):
     p = np.asarray(preds, dtype=np.float32)
     lo, hi = bounds
@@ -118,11 +108,6 @@ def clip_predictions(preds, bounds):
     touched = np.any((p < lo) | (p > hi), axis=1) if p.ndim == 2 else (p < lo) | (p > hi)
     return clipped, touched
 
-
-# Screening annotation
-
-# Adds the applicability-domain columns to a screening table.
-# preds is the (n, 9) matrix of per-isoform predictions aligned with df.
 def annotate(df, preds, reference_smiles, threshold, bounds, smiles_col=SMILES_COL,
              reference_groups=None, query_groups=None):
     out = df.reset_index(drop=True).copy()
@@ -137,7 +122,6 @@ def annotate(df, preds, reference_smiles, threshold, bounds, smiles_col=SMILES_C
         out[f'pred_{col}'] = clipped[:, j]
     return out
 
-
 # Reports how many compounds survive the domain filter
 def domain_summary(annotated, label='library'):
     n = len(annotated)
@@ -149,13 +133,8 @@ def domain_summary(annotated, label='library'):
           f"q90={annotated['nn_tanimoto'].quantile(0.90):.3f}  max={annotated['nn_tanimoto'].max():.3f}")
     return {'n': n, 'in_domain': inside, 'clipped': clipped}
 
-
 # Entire applicability-domain analysis
 
-# Calibrates the domain on out-of-fold and test predictions, then applies it to a screening library.
-# The two calibration sources are complementary: the test set measures the error on a genuinely
-# held-out split but its similarity never drops below ~0.27, so only the out-of-fold predictions
-# (with same-cluster neighbours excluded) populate the low-similarity bins where the threshold falls.
 def run_applicability(cv_df, test_df, oof_path, bundle, library_smiles, output_dir,
                       device='cpu', tolerance=RMSE_TOLERANCE, batch_size=32):
     from s5_training import predict_dmpnn  # imported here so the helpers above stay torch-free
